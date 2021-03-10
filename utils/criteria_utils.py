@@ -1,6 +1,6 @@
 import pandas as pd
 
-
+# hola
 def normalize(values):
     """
     Regresa los valores normalizados de 0 a 1.
