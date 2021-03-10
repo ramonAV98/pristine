@@ -55,7 +55,7 @@ def _sell_setup(df, pss_param):
         avg_change20ma = (np.diff(normalize(df['20ma'].tail(20)))).mean()
         avg_change40ma = (np.diff(normalize(df['40ma'].tail(40)))).mean()
         # PSS_0 = constant_values.get('low_last')  # ultimo elemento de open (mas reciente)
-
+        # para modificar tambien
         # if any(all[],all[])...si cualquiera de los dos all() se cumple pasa
         if any([
             all([

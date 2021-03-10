@@ -58,6 +58,7 @@ def _buy_setup(df, pbs_param):
                 avg_change40ma > pbs_param
             ])
         ]):
+            # Esto se tiene que arreglar
             return 1
         else:
             return 0
