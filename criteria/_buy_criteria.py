@@ -1,90 +1,65 @@
-from utils.criteria_utils import *
-import numpy as np
+from utils.assertions import *
+from criteria.trend_detectors.iterative_regression import detect_uptrend
+from criteria._criteria import Criteria
 
 
-def buy_criteria(df_stock, pbs, cola, nrb, vol):
-    """
-    Verifies which criterion is accomplished for the given stock data.
+class BuyCriteria(Criteria):
 
-    :param df_stock: pd.DataFrame. Dataframe containing data for a single stock
-    :param pbs: float. Buy setup param
-    :param cola: float. Cola de piso param
-    :param nrb: float. Nrb param
-    :param vol: float. Pro volume param
-    :return: dict. Dictionary with boolean values containing which criteria were accomplished
-    """
-    _, close_last, low_last, open_last = get_last_values(df_stock)
-    buy_criteria_dict = {'setup': _buy_setup(df_stock, pbs),
-                         'cambio de guardia': _cambio_guardia(df_stock),
-                         'cola de piso': _cola_piso(df_stock, cola, close_last, low_last),
-                         'narrow body': narrow_body(df_stock, nrb, close_last, open_last),
-                         'pz': pz(df_stock, close_last, open_last),
-                         'pro volume': pro_volume(df_stock, vol)
-                         }
-    return buy_criteria_dict
+    def __init__(self, df):
+        super().__init__(df)
 
+    def run_criteria(self):
+        buy_dict = {'40ma uptrend': self._40ma_uptrend(),
+                    '20ma uptrend': self._20ma_uptrend(),
+                    'contiguous desc high': self._contiguous_descendant_high(),
+                    'contiguous red candles': self._contiguous_red_candles(),
+                    }
+        buy_dict = self.add_shared_criteria(buy_dict)
+        return buy_dict
 
-def _buy_setup(df, pbs_param):
-    """
-    Pristine Buying Setup. Indispensable que se cumpla para considerar comprar.
-    Dos escenarios son posibles para considerar esta condición como cumplida:
-        1.
-        2.
-    """
-    try:  # protege el código de que haya acciones sin el número suficiente de registros para el vector PBS
+    def _40ma_uptrend(self):
+        assert_columns(self.df, 'Date')
+        self.df.sort_values('Date', inplace=True)
+        df_40ma = self.compute_ma('Close', 40)
+        uptrend = detect_uptrend(df_40ma, '40ma')
+        return uptrend
 
-        pbs = list(df['High'].tail(3))  # las 3 mas recientes de high
-        open_last = df['Open'].iloc[-1]
-        close_last = df['Close'].iloc[-1]
-        close_last_2 = df['Close'].iloc[-2]
-        open_last_2 = df['Open'].iloc[-2]
-        open_last_3 = df['Open'].iloc[-3]
-        close_last_3 = df['Close'].iloc[-3]
-        avg_change20ma = (np.diff(normalize(df['20ma'].tail(20)))).mean()
-        avg_change40ma = (np.diff(normalize(df['40ma'].tail(40)))).mean()
+    def _20ma_uptrend(self):
+        self.df.reset_index(inplace=True)
+        self.df.sort_values('Date', inplace=True)
+        df_20ma = self.compute_ma('Close', 20)
+        uptrend = detect_uptrend(df_20ma, '20ma')
+        return uptrend
 
-        # if any(all[],all[])... si cualquiera de los dos all() se cumple
-        if any([
-            all([
-                pbs == sorted(pbs, reverse=True),
-                avg_change20ma > pbs_param,
-                avg_change40ma > pbs_param
-            ]),
-            all([
-                close_last < open_last,
-                close_last_2 < open_last_2,
-                close_last_3 < open_last_3,
-                avg_change20ma > pbs_param,
-                avg_change40ma > pbs_param
-            ])
-        ]):
-            # Esto se tiene que arreglar
+    def _contiguous_descendant_high(self, n=3):
+        assert_columns(self.df, 'High')
+        df_last_n = self.df.tail(n)
+        last_n_high_values = df_last_n['High'].values.tolist()
+        if last_n_high_values == sorted(last_n_high_values, reverse=True):
             return 1
-        else:
-            return 0
-    except IndexError:
         return 0
 
-
-def _cambio_guardia(df):
-    """
-    Test de cambio de guardia: 3 o mas velas de un color seguidas por una del color opuesto.
-    """
-    cog = (df['Open'].tail(4) - df['Close'].tail(4)).values
-    if all(x > 0 for x in cog[:-1]) and cog[-1] < 0:
-        return 1
-    else:
+    def _contiguous_red_candles(self, n=3):
+        assert_columns(self.df, ['Open', 'Close'])
+        df_last_n = self.df.tail(n)
+        last_n_open_minus_close = df_last_n['Open'] - df_last_n['Close']
+        if all(last_n_open_minus_close > 0):
+            return 1
         return 0
 
-
-def _cola_piso(df, cola_param, close_last, low_last):
-    """
-    Test de cola de piso: El tamaño de la cola de la vela del ultimo dia es significativamente mayor
-    que el tamano promedio de las colas de piso de la muestra
-    """
-    avg_cdp = (df['Close'] - df['Low']).mean()
-    cola_de_piso = close_last - low_last
-    if cola_de_piso > cola_param * avg_cdp:
-        return 1
-    else:
-        return 0
+    # def _cambio_guardia(self):
+    #     cog = (self.df['Open'].tail(4) - self.df['Close'].tail(4)).values
+    #     if all(x > 0 for x in cog[:-1]) and cog[-1] < 0:
+    #         return 1
+    #     return 0
+    #
+    # def _cola_piso(self):
+    #     assert_columns(df, ['Close', 'Low'])
+    #     avg_cdp = (df['Close'] - df['Low']).mean()
+    #     df_last = df.tail(1)
+    #     close_last = df_last['Close'].item()
+    #     low_last = df_last['Low'].item()
+    #     cola_de_piso = close_last - low_last
+    #     if cola_de_piso > 2 * avg_cdp:
+    #         return 1
+    #     return 0
