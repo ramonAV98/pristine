@@ -1,6 +1,7 @@
 /my_venv/
 .DS_Store
 .idea/
-__pycache__/
+__pycache__
 *.csv
-*ipynb_checkpoints/
+*.ipynb
+.ipynb_checkpoints

@@ -12,7 +12,7 @@ def detect_uptrend(df, column, n=20):
     if all coefficients are positive.
 
     Parameters
-    --------------
+    ------------
     df: pd.DataFrame.
     column: str. Column for which the uptrend will be detected.
     n: int. Number of coefficients to compute

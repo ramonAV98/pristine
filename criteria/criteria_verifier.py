@@ -1,6 +1,5 @@
 from sources.load_data import load_data
-from criteria._buy_criteria import BuyCriteria
-from criteria._sell_criteria import sell_criteria
+from criteria.foo.buy_criteria import BuyCriteria
 import numpy as np
 import pandas as pd
 

@@ -1,6 +1,6 @@
 from utils.assertions import *
 from criteria.trend_detectors.iterative_regression import detect_uptrend
-from criteria._criteria import Criteria
+from criteria.foo.criteria import Criteria
 
 
 class BuyCriteria(Criteria):
@@ -9,25 +9,21 @@ class BuyCriteria(Criteria):
         super().__init__(df)
 
     def run_criteria(self):
-        buy_dict = {'40ma uptrend': self._40ma_uptrend(),
-                    '20ma uptrend': self._20ma_uptrend(),
-                    'contiguous desc high': self._contiguous_descendant_high(),
-                    'contiguous red candles': self._contiguous_red_candles(),
-                    }
-        buy_dict = self.add_shared_criteria(buy_dict)
-        return buy_dict
+        buy_criteria = {'40ma uptrend': self._40ma_uptrend(),
+                        '20ma uptrend': self._20ma_uptrend(),
+                        'contiguous desc high': self._contiguous_descendant_high(),
+                        'contiguous red candles': self._contiguous_red_candles(),
+                        }
+        shared_criteria = self.shared_criteria()
+        return {**buy_criteria, **shared_criteria}
 
     def _40ma_uptrend(self):
-        assert_columns(self.df, 'Date')
-        self.df.sort_values('Date', inplace=True)
-        df_40ma = self.compute_ma('Close', 40)
+        df_40ma = self.compute_ma(40)
         uptrend = detect_uptrend(df_40ma, '40ma')
         return uptrend
 
     def _20ma_uptrend(self):
-        self.df.reset_index(inplace=True)
-        self.df.sort_values('Date', inplace=True)
-        df_20ma = self.compute_ma('Close', 20)
+        df_20ma = self.compute_ma(20)
         uptrend = detect_uptrend(df_20ma, '20ma')
         return uptrend
 
