@@ -1,9 +1,4 @@
 from criteria._criteria import Criteria
-from utils.assertions import *
-import inspect
-import sys
-
-COMMON_CRITERIA = inspect.getmembers(sys.modules[__name__], inspect.isclass)
 
 
 class ProVolume(Criteria):
@@ -14,7 +9,6 @@ class ProVolume(Criteria):
         return self._pro_volume()
 
     def _pro_volume(self):
-        assert_columns(self.df, 'Volume')
         avg_volume = self.df['Volume'].mean()
         last_volume = self.df['Volume'].tail(1).item()
         if last_volume > avg_volume:
@@ -30,7 +24,6 @@ class NarrowBody(Criteria):
         return self._narrow_body()
 
     def _narrow_body(self):
-        assert_columns(self.df, ['Close', 'Open'])
         avg_body = (abs(self.df['Close'] - self.df['Open'])).mean()
         df_last = self.df.tail(1)
         last_body = abs(df_last.Close.item() - df_last.Open.item())

@@ -1,8 +1,13 @@
 from sources.load_data import load_data
-from criteria.buy_criteria import BUY_CRITERIA
-from criteria.common_criteria import COMMON_CRITERIA
+from criteria.buycriteria import (FtyMaUptrend, TnyMaUptrend, ContRedCandles,
+                                  ContDescHigh)
+from criteria.cmncriteria import (ProVolume, NarrowBody, PristineZone)
 import numpy as np
 import pandas as pd
+
+BUY_CRITERIA = [FtyMaUptrend, TnyMaUptrend, ContRedCandles, ContDescHigh]
+COMMON_CRITERIA = [ProVolume, NarrowBody, PristineZone]
+# SELL_CRITERIA = []
 
 
 class Scanner:
@@ -21,41 +26,39 @@ class Scanner:
         self.end_date = end_date
         self.source = source
         self._validate_end_date()
-        self.locate_fn = load_data(symbols, end_date)
+        self.locate_fn = load_data(symbols, self.end_date)
 
     def scan(self):
         """
         Scans pristine criteria for all symbols.
         """
         buy_results = []
-        sell_results = []
         for sym in self.symbols:
-            buy_scan, sell_scan = self._sym_scanning(sym)
-            buy_results.append(buy_scan)
-            sell_results.append(sell_scan)
+            scanning = self._scan_sym(sym)
+            if scanning is None:
+                continue
+            buy_results.append(scanning)
         df_buy = pd.DataFrame(buy_results)
-        df_sell = pd.DataFrame(sell_results)
-        return df_buy, df_sell
+        return df_buy
 
-    def _sym_scanning(self, sym):
+    def _scan_sym(self, sym):
         df_sym = self.locate_fn(sym)
-        sell_scan = {}
-        buy_scan = self._scan_buy_criteria(df_sym)
-        common_scan = self._scan_common_criteria(df_sym)
-        buy_scan = {**buy_scan, **common_scan, 'symbol': sym}
-        return buy_scan, sell_scan
+        if df_sym.isna().sum().sum() != 0:
+            return None
+        buy_scan = self._scan_criteria_collection(df_sym, BUY_CRITERIA)
+        common_scan = self._scan_criteria_collection(df_sym, COMMON_CRITERIA)
+        buy_scan = {**buy_scan, **common_scan, 'Symbol': sym}
+        return buy_scan
 
-    def _scan_buy_criteria(self, df):
+    def _scan_criteria_collection(self, df, collection):
         scan_results = {}
-        for cls in BUY_CRITERIA:
-            scan_results[cls.name] = cls(df).scan()
+        for cls in collection:
+            name = cls.__name__
+            scan_results[name] = self._scan_criteria(df, cls)
         return scan_results
 
-    def _scan_common_criteria(self, df):
-        scan_results = {}
-        for cls in COMMON_CRITERIA:
-            scan_results[cls.name] = cls(df).scan()
-        return scan_results
+    def _scan_criteria(self, df, criteria_cls):
+        return criteria_cls(df).scan()
 
     def _validate_end_date(self):
         """

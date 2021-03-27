@@ -1,5 +1,4 @@
 from sklearn.linear_model import LinearRegression
-from utils.assertions import *
 import numpy as np
 
 
@@ -17,7 +16,6 @@ def detect_uptrend(df, column, n=20):
     column: str. Column for which the uptrend will be detected.
     n: int. Number of coefficients to compute
     """
-    assert_columns(df, ['Date'])
     df.sort_values('Date', inplace=True)
     df.reset_index(inplace=True)  # Index column is available from now on
     df_tail_n = df.tail(n + 1)
@@ -40,9 +38,6 @@ def _iterative_linear_regression(df, x_columns, y_column, reversed_order=True):
 
 
 def _linear_regression_from_df(df, x_columns, y_column):
-    assert_type(x_columns, list, 'X columns')
-    assert_type(y_column, list, 'y column')
-    assert_columns(df, x_columns + y_column)
     x = df[x_columns].values
     y = df[y_column].values
     model = LinearRegression()

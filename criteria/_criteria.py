@@ -1,6 +1,4 @@
 from abc import ABCMeta, abstractmethod
-from utils.assertions import assert_columns
-
 
 class Criteria(metaclass=ABCMeta):
 
@@ -20,7 +18,6 @@ class Criteria(metaclass=ABCMeta):
         """
         Computes the n moving average on the given column.
         """
-        assert_columns(df, [column, 'Date'])
         df_ma = df.sort_values('Date')[['Date']].copy()
         df_ma[f'{n}ma'] = df[column].rolling(n).mean()
         df_ma.columns.name = None
