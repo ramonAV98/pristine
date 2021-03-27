@@ -2,9 +2,9 @@ import pandas_datareader.data as web
 import pandas as pd
 
 
-def load_data(stocks, end_date=None, source='yahoo'):
+def load_data(symbols, end_date=None, source='yahoo'):
     """
-    :param stocks:
+    :param symbols:
     :param end_date:
     :param source:
     :return:
@@ -12,10 +12,10 @@ def load_data(stocks, end_date=None, source='yahoo'):
     start_date = _find_start_end(end_date)
 
     if source == 'yahoo':
-        stocks_data, locate_stock_fn = _yahoo_source(stocks, start_date, end_date)
+        loc_fn = _yahoo_source(symbols, start_date, end_date)
     else:
         raise ValueError(f"Source '{source}' not available")
-    return stocks_data, locate_stock_fn
+    return loc_fn
 
 
 def _find_start_end(end_date):
@@ -25,13 +25,16 @@ def _find_start_end(end_date):
     return start_date
 
 
-def _yahoo_source(stocks, start_date, end_date):
-    stocks_data = web.DataReader(stocks, 'yahoo', start_date, end_date)
-    stocks_data = stocks_data.swaplevel(0, 1, 1)
+def _yahoo_source(symbols, start_date, end_date):
+    df_syms_data = web.DataReader(symbols, 'yahoo', start_date, end_date)
+    df_syms_data = df_syms_data.swaplevel(0, 1, 1)
 
-    def locate_stock_fn(df, stock):
-        df_stock = df.loc[:, stock].copy()
-        df_stock.reset_index(inplace=True)
-        return df_stock
-    return stocks_data, locate_stock_fn
+    def loc_fn(sym):
+        """
+        Locates data for a single symbol
+        """
+        df_sym = df_syms_data.loc[:, sym].copy()
+        df_sym.reset_index(inplace=True)
+        return df_sym
+    return loc_fn
 

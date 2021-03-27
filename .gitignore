@@ -1,8 +1,6 @@
 /my_venv/
-.DS_Store
+/notebooks/
 .idea/
 __pycache__
+.DS_Store
 *.csv
-*.ipynb
-.ipynb_checkpoints
-notebooks/

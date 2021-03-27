@@ -1,16 +1,16 @@
-from criteria.foo.criteria import Criteria
+from criteria._criteria import Criteria
 
 
 class SellCriteria(Criteria):
     def __init__(self, df):
         super().__init__(df)
 
-    def run_criteria(self):
+    def scan_criteria(self):
         """
         """
 
         sell_dict = {}
-        return sell_criteria_dict
+        return sell_dict
 
     # def _cambio_guardia(self, df):
     #     """
