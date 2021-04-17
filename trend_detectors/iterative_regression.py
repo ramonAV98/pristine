@@ -4,10 +4,12 @@ import numpy as np
 
 def detect_uptrend(df, column, n=20):
     """
-    Determines if an uptrend is present by computing several linear regressions on the data.
-    The first linear regressions will gather the last 2 values, next the last 3, next for the last 4 and so on.
+    Determines if an uptrend is present by computing several linear regressions
+     on the data. The first linear regressions will gather the last 2 values,
+     next the last 3, next for the last 4 and so on.
     That is, the i-th linear regression will consist of the last i+1 points.
-    Once the n linear regression are computed and every coefficient (slope) is available, an uptrend is said to be present
+    Once the n linear regression are computed and every coefficient (slope) is
+    available, an uptrend is said to be present
     if all coefficients are positive.
 
     Parameters

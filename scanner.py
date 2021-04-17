@@ -11,22 +11,57 @@ COMMON_CRITERIA = [ProVolume, NarrowBody, PristineZone]
 
 
 class Scanner:
+    """
+    Pristine scanner.
 
-    def __init__(self, symbols, end_date=None, source='yahoo'):
-        """
-        Parameters
-        ----------
-        symbols: list. Collection of stock symbols (i.e., tickers).
-        end_date: str. Date on which the verification process will take place.
-        If None, defaults to today's date.
-        source: str. Source identifier from which stocks data will be obtained.
-        If None, defaults to yahoo source.
-        """
-        self.symbols = symbols
-        self.end_date = end_date
-        self.source = source
-        self._validate_end_date()
-        self.locate_fn = load_data(symbols, self.end_date)
+    Scans the set for buy and sell criteria for the given df_source.
+
+    Parameters
+    ----------
+    df_source. pd.DataFrame
+        Dataframe containing data for all the symbols that want to be scanned.
+        Needed columns: [date_col, symbol_col, 'Adj Close', 'Close', 'High',
+                        'Low', 'Open', 'Volume']
+        The primary key for this dataframe should be the composition of
+        'Date' and 'Symbol'. That is, each row is uniquely identified by
+        its Date and Symbol.
+        Defaults columns for date_col and symbol_col are 'Date' and 'Symbol',
+        respectively.
+
+    date. str or timestamp. Default None
+        Scanning date.  If None, the scanning date corresponds to the maximum
+        date on df_source.
+
+    date_col. str. Default 'Date'
+        Date column on df_source
+
+    symbol_col. str. Default 'Symbol'
+        Column containing the tickers
+    """
+
+    def __init__(self, df_source, date_col='Date', symbol_col='Symbol'):
+
+        self.df_source = df_source
+        self.date_col = date_col
+        self.symbol_col = symbol_col
+        self._validate_df_source()
+        self.symbols = self.df_source[symbol_col].unique().tolist()
+        self._date = self.df_source[date_col].max()
+
+    def _validate_df_source(self):
+        primary_cols = [self.date_col, self.symbol_col]
+        financial_cols = ['Adj Close', 'Close', 'High', 'Low', 'Open',
+                          'Volume']
+        needed_cols = primary_cols + financial_cols
+        for col in needed_cols:
+            assert col in self.df_source, f'Column {col} not found'
+        unique_dates = self.df_source[self.date_col].unique()
+        len_dates = len(unique_dates)
+        assert len_dates >= 60, (f'At least 60 dates must be included. Instead'
+                                 f' got {len_dates}')
+        self.df_source.sort_values([self.date_col, self.symbol_col],
+                                   inplace=True)
+        self.df_source.reset_index(inplace=True, drop=True)
 
     def scan(self):
         """
@@ -42,36 +77,29 @@ class Scanner:
         return df_buy
 
     def _scan_sym(self, sym):
-        df_sym = self.locate_fn(sym)
-        if df_sym.isna().sum().sum() != 0:
-            return None
-        buy_scan = self._scan_criteria_collection(df_sym, BUY_CRITERIA)
-        common_scan = self._scan_criteria_collection(df_sym, COMMON_CRITERIA)
-        buy_scan = {**buy_scan, **common_scan, 'Symbol': sym}
+        """
+        Scans a single symbol
+        """
+        df_sym = self._loc_sym(sym)
+        buy_scan = self._scan_criteria(df_sym, BUY_CRITERIA)
+        common_scan = self._scan_criteria(df_sym, COMMON_CRITERIA)
+        buy_scan = {**buy_scan, **common_scan, 'Symbol': sym,
+                    'Date': self._date}
         return buy_scan
 
-    def _scan_criteria_collection(self, df, collection):
+    def _loc_sym(self, sym):
+        """
+        Locate a single symbol in self.df_source
+        """
+        df_sym = self.df_source.loc[self.df_source[self.symbol_col] == sym]
+        return df_sym
+
+    def _scan_criteria(self, df, criteria):
+        """
+        Calls scan method for each element of a criteria collection
+        """
         scan_results = {}
-        for cls in collection:
+        for cls in criteria:
             name = cls.__name__
-            scan_results[name] = self._scan_criteria(df, cls)
+            scan_results[name] = cls(df).scan()
         return scan_results
-
-    def _scan_criteria(self, df, criteria_cls):
-        return criteria_cls(df).scan()
-
-    def _validate_end_date(self):
-        """
-        Validates given end date corresponds to a business day.
-        """
-        if self.end_date is None:
-            today = pd.Timestamp('today')
-            if np.is_busday(today.strftime('%Y-%m-%d')):
-                self.end_date = today
-            else:
-                previous_bday = today - pd.tseries.offsets.BDay(1)
-                self.end_date = previous_bday.strftime('%Y-%m-%d')
-        else:
-            assert np.is_busday(self.end_date), ('Given end date is not a '
-                                                 'business day')
-

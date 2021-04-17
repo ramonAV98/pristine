@@ -56,3 +56,49 @@ class ContRedCandles(Criteria):
         if all(last_n_open_minus_close > 0):
             return 1
         return 0
+
+
+class ColaDePiso(Criteria):
+    def __init__(self, df):
+        avg_verde = (abs(self.df['Open'] - self.df['Low'])).mean()
+        avg_roja = (abs(self.df['Close'] - self.df['Low'])).mean()
+        self.avg_cola = (avg_verde + avg_roja).mean()
+        super().__init__(df)
+
+    def scan(self):
+        return self._cola_de_piso_roja() or self._cola_de_piso_verde()
+
+    def _cola_de_piso_verde(self):
+        df_last = self.df.tail(1)
+        open = df_last['Open'].item()
+        low = df_last['Low'].item()
+        if (open - low) > 1.5 * self.avg_cola:
+            return 1
+        return 0
+
+    def _cola_de_piso_roja(self):
+        df_last = self.df.tail(1)
+        close = df_last['Close'].item()
+        low = df_last['Low'].item()
+        if (close - low) > 1.5 * self.avg_cola:
+            return 1
+        return 0
+
+
+class Target(Criteria):
+    def __init__(self, df):
+        super().__init__(df)
+
+    def scan(self):
+        return self._target()
+
+    def _target(self):
+        df_last = self.df.tail(1)
+        df_yday = self.df.tail(2)[-2]
+        high_today = df_last.High.item()
+        high_yday = df_yday.High.item()
+        low_today = df_last.Low.item()
+        low_yday = df_yday.Low.item()
+        if (high_today > (1.03 * high_yday)) & (low_today > low_yday):
+            return 1
+        return 0
