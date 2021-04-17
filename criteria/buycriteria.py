@@ -60,10 +60,10 @@ class ContRedCandles(Criteria):
 
 class ColaDePiso(Criteria):
     def __init__(self, df):
+        super().__init__(df)
         avg_verde = (abs(self.df['Open'] - self.df['Low'])).mean()
         avg_roja = (abs(self.df['Close'] - self.df['Low'])).mean()
-        self.avg_cola = (avg_verde + avg_roja).mean()
-        super().__init__(df)
+        self.avg_cola = (avg_verde + avg_roja)/2
 
     def scan(self):
         return self._cola_de_piso_roja() or self._cola_de_piso_verde()

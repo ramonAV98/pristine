@@ -1,11 +1,11 @@
 from sources.load_data import load_data
 from criteria.buycriteria import (FtyMaUptrend, TnyMaUptrend, ContRedCandles,
-                                  ContDescHigh)
+                                  ContDescHigh, ColaDePiso)
 from criteria.cmncriteria import (ProVolume, NarrowBody, PristineZone)
 import numpy as np
 import pandas as pd
 
-BUY_CRITERIA = [FtyMaUptrend, TnyMaUptrend, ContRedCandles, ContDescHigh]
+BUY_CRITERIA = [FtyMaUptrend, TnyMaUptrend, ContRedCandles, ContDescHigh, ColaDePiso]
 COMMON_CRITERIA = [ProVolume, NarrowBody, PristineZone]
 # SELL_CRITERIA = []
 
