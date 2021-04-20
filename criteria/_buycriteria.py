@@ -85,6 +85,17 @@ class ColaDePiso(Criteria):
         return 0
 
 
+# class SectorTrend(Criteria):
+#     def __init__(self, df, sym):
+#         super().__init__(df)
+#         self.sym = sym
+#
+#     def scan(self):
+#
+#
+#     def _sector_trend(self):
+
+
 class Target(Criteria):
     def __init__(self, df):
         super().__init__(df)
