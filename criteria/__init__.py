@@ -1,5 +1,5 @@
 from ._buycriteria import (FtyMaUptrend, TnyMaUptrend, ContRedCandles,
-                           ContDescHigh, ColaDePiso)
+                           ContDescHigh, ColaDePiso, SectorTrend)
 from ._cmncriteria import (ProVolume, NarrowBody, PristineZone)
 
 __all__ = [
@@ -8,6 +8,7 @@ __all__ = [
     'ContRedCandles',
     'ContDescHigh',
     'ColaDePiso',
+    'SectorTrend',
     'ProVolume',
     'NarrowBody',
     'PristineZone'

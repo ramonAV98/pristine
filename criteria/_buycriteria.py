@@ -1,8 +1,17 @@
 from trend_detectors.iterative_regression import detect_uptrend
 from criteria._criteria import Criteria
+import numpy as np
 
 
 class FtyMaUptrend(Criteria):
+    """
+    <mini resumen>
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Dataframe for a single symbol
+    """
     def __init__(self, df):
         super().__init__(df)
 
@@ -85,31 +94,25 @@ class ColaDePiso(Criteria):
         return 0
 
 
-# class SectorTrend(Criteria):
-#     def __init__(self, df, sym):
-#         super().__init__(df)
-#         self.sym = sym
-#
-#     def scan(self):
-#
-#
-#     def _sector_trend(self):
-
-
-class Target(Criteria):
-    def __init__(self, df):
+class SectorTrend(Criteria):
+    def __init__(self, df, sector_col='Sector'):
         super().__init__(df)
+        self.sector_col = sector_col
+        self._sectors = df[sector_col].unique().tolist()
 
     def scan(self):
-        return self._target()
+        return self._sector_trend()
 
-    def _target(self):
-        df_last = self.df.tail(1)
-        df_yday = self.df.tail(2)[-2]
-        high_today = df_last.High.item()
-        high_yday = df_yday.High.item()
-        low_today = df_last.Low.item()
-        low_yday = df_yday.Low.item()
-        if (high_today > (1.03 * high_yday)) & (low_today > low_yday):
-            return 1
-        return 0
+    def _wm_fn(self):
+        return lambda x: np.average(x, weights=self.df.loc[x.index, "Volume"])
+
+    def _sector_trend(self):
+        wm_fn = self._wm_fn()
+        df_agg = self.df.groupby(['Sector', 'Date']).agg({'Close': wm_fn})
+        df_agg.reset_index(inplace=True)
+        uptrend_by_sector = {}
+        for sect in self._sectors:
+            df_sect = df_agg.loc[df_agg[self.sector_col] == sect].copy()
+            uptrend = FtyMaUptrend(df_sect).scan()
+            uptrend_by_sector[sect] = uptrend
+        return uptrend_by_sector

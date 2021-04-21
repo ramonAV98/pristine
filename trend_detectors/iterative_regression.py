@@ -21,25 +21,25 @@ def detect_uptrend(df, column, n=20):
     df.sort_values('Date', inplace=True)
     df.reset_index(inplace=True)  # Index column is available from now on
     df_tail_n = df.tail(n + 1)
-    coef_list = _iterative_linear_regression(df_tail_n, ['index'], [column])
+    coef_list = _iterative_ols(df_tail_n, ['index'], [column])
     coef_list = np.squeeze(np.concatenate(coef_list))
     if all(coef > 0 for coef in coef_list):
         return 1
     return 0
 
 
-def _iterative_linear_regression(df, x_columns, y_column, reversed_order=True):
+def _iterative_ols(df, x_columns, y_column, reversed_order=True):
     if reversed_order:
         df = df.iloc[::-1].copy()
     coef_list = []
     for n in range(2, len(df) + 1):
         df_head_n = df.head(n)
-        _, coef = _linear_regression_from_df(df_head_n, x_columns, y_column)
+        _, coef = _ols_from_df(df_head_n, x_columns, y_column)
         coef_list.append(coef)
     return coef_list
 
 
-def _linear_regression_from_df(df, x_columns, y_column):
+def _ols_from_df(df, x_columns, y_column):
     x = df[x_columns].values
     y = df[y_column].values
     model = LinearRegression()

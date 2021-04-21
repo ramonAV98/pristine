@@ -1,5 +1,6 @@
 from criteria import (FtyMaUptrend, TnyMaUptrend, ContRedCandles, ContDescHigh,
-                      ColaDePiso, ProVolume, NarrowBody, PristineZone)
+                      ColaDePiso, ProVolume, NarrowBody, PristineZone,
+                      SectorTrend)
 import pandas as pd
 
 BUY_CRITERIA = [
@@ -53,7 +54,8 @@ class Scanner:
         self.symbol_col = symbol_col
         self._validate_df_source()
         self.symbols = self.df_source[symbol_col].unique().tolist()
-        self._date = self.df_source[date_col].max()
+        self.date = self.df_source[date_col].max()
+        self.sector_trend = SectorTrend(df_source).scan()
 
     def _validate_df_source(self):
         primary_cols = [self.date_col, self.symbol_col]
@@ -62,10 +64,6 @@ class Scanner:
         needed_cols = primary_cols + financial_cols
         for col in needed_cols:
             assert col in self.df_source, f'Column {col} not found'
-        unique_dates = self.df_source[self.date_col].unique()
-        len_dates = len(unique_dates)
-        assert len_dates >= 60, (f'At least 60 dates must be included. Instead'
-                                 f' got {len_dates}')
         self.df_source.sort_values([self.date_col, self.symbol_col],
                                    inplace=True)
         self.df_source.reset_index(inplace=True, drop=True)
@@ -88,11 +86,19 @@ class Scanner:
         Scans a single symbol
         """
         df_sym = self._loc_sym(sym)
+        if len(df_sym) < 60:
+            return None
+        sector = self._get_sym_sector(df_sym)
         buy_scan = self._scan_criteria(df_sym, BUY_CRITERIA)
         common_scan = self._scan_criteria(df_sym, COMMON_CRITERIA)
-        buy_scan = {**buy_scan, **common_scan, 'Symbol': sym,
-                    'Date': self._date}
+        buy_scan = {**buy_scan, **common_scan,
+                    'Sector': self.sector_trend[sector],
+                    'Symbol': sym,
+                    'Date': self.date}
         return buy_scan
+
+    def _get_sym_sector(self, df_sym):
+        return df_sym['Sector'].unique().item()
 
     def _loc_sym(self, sym):
         """
