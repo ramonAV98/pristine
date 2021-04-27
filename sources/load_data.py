@@ -2,7 +2,7 @@ import pandas_datareader.data as web
 import pandas as pd
 import numpy as np
 
-SECTOR_DF_PATH = 'sources/sect_df.csv'
+SECTOR_DF_PATH = 'csv/sect_df.csv'
 
 
 def load_data(symbols, end_date, start_date=None, source='yahoo'):

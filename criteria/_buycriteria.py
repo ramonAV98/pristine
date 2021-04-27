@@ -1,4 +1,4 @@
-from trend_detectors.iterative_regression import detect_uptrend
+from trend_detectors.iterative_ols import detect_uptrend
 from criteria._criteria import Criteria
 import numpy as np
 
@@ -12,13 +12,17 @@ class FtyMaUptrend(Criteria):
     df : pd.DataFrame
         Dataframe for a single symbol
     """
+
     def __init__(self, df):
         super().__init__(df)
 
     def scan(self):
         return self._assert_uptrend()
 
-    def _assert_uptrend(self):
+    def _assert_uptrend(self, n_coefs=20):
+        needed_dates = 40 + n_coefs
+        assert len(self.df) >= needed_dates, (f'Symbol df has less than '
+                                              f'{needed_dates} dates')
         df_40ma = Criteria.compute_ma(self.df, 40)
         uptrend = detect_uptrend(df_40ma, '40ma')
         return uptrend
@@ -72,7 +76,7 @@ class ColaDePiso(Criteria):
         super().__init__(df)
         avg_verde = (abs(self.df['Open'] - self.df['Low'])).mean()
         avg_roja = (abs(self.df['Close'] - self.df['Low'])).mean()
-        self.avg_cola = (avg_verde + avg_roja)/2
+        self.avg_cola = (avg_verde + avg_roja) / 2
 
     def scan(self):
         return self._cola_de_piso_roja() or self._cola_de_piso_verde()
@@ -108,11 +112,14 @@ class SectorTrend(Criteria):
 
     def _sector_trend(self):
         wm_fn = self._wm_fn()
-        df_agg = self.df.groupby(['Sector', 'Date']).agg({'Close': wm_fn})
+        agg = {'Close': wm_fn}
+        df_agg = self.df.groupby([self.sector_col, 'Date']).agg(agg)
         df_agg.reset_index(inplace=True)
         uptrend_by_sector = {}
         for sect in self._sectors:
             df_sect = df_agg.loc[df_agg[self.sector_col] == sect].copy()
+            if len(df_sect) < 60:
+                continue
             uptrend = FtyMaUptrend(df_sect).scan()
             uptrend_by_sector[sect] = uptrend
         return uptrend_by_sector

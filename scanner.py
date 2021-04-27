@@ -13,7 +13,8 @@ BUY_CRITERIA = [
 COMMON_CRITERIA = [
     ProVolume,
     NarrowBody,
-    PristineZone]
+    PristineZone
+]
 
 # SELL_CRITERIA = []
 
@@ -60,7 +61,7 @@ class Scanner:
     def _validate_df_source(self):
         primary_cols = [self.date_col, self.symbol_col]
         financial_cols = ['Adj Close', 'Close', 'High', 'Low', 'Open',
-                          'Volume']
+                          'Volume', 'Sector']
         needed_cols = primary_cols + financial_cols
         for col in needed_cols:
             assert col in self.df_source, f'Column {col} not found'
@@ -91,8 +92,9 @@ class Scanner:
         sector = self._get_sym_sector(df_sym)
         buy_scan = self._scan_criteria(df_sym, BUY_CRITERIA)
         common_scan = self._scan_criteria(df_sym, COMMON_CRITERIA)
-        buy_scan = {**buy_scan, **common_scan,
-                    'Sector': self.sector_trend[sector],
+        buy_scan = {**buy_scan,
+                    **common_scan,
+                    'SectorTrend': self.sector_trend[sector],
                     'Symbol': sym,
                     'Date': self.date}
         return buy_scan
@@ -104,12 +106,13 @@ class Scanner:
         """
         Locate a single symbol in self.df_source
         """
-        df_sym = self.df_source.loc[self.df_source[self.symbol_col] == sym]
+        mask = (self.df_source[self.symbol_col] == sym)
+        df_sym = self.df_source.loc[mask]
         return df_sym
 
     def _scan_criteria(self, df, criteria):
         """
-        Calls scan method for each element of a criteria collection
+        Calls scan method for each class element inside a criteria collection.
         """
         scan_results = {}
         for cls in criteria:
