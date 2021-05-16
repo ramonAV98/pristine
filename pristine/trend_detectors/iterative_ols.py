@@ -2,7 +2,7 @@ from sklearn.linear_model import LinearRegression
 import numpy as np
 
 
-def detect_uptrend(df, column, n=20):
+def detect_uptrend(df, column, n_coefs=20, degrees_param=45):
     """
     Determines if an uptrend is present by computing several linear regressions
     on the data. The first linear regressions will gather the last 2 values,
@@ -13,17 +13,32 @@ def detect_uptrend(df, column, n=20):
     positive.
 
     Parameters
-    ------------
+    ----------
     df: pd.DataFrame.
-    column: str. Column for which the uptrend will be detected.
-    n: int. Number of coefficients to compute
+        Dataframe containing a date column indicating the timestamp of each
+        row.
+
+    date_col: str
+        Date column
+
+    column: str.
+        Column for which the uptrend will be detected.
+
+    n: int.
+        Number of coefficients to compute
     """
-    df.sort_values('Date', inplace=True)
+    print(degrees_param)
     df.reset_index(inplace=True)  # Index column is available from now on
-    df_tail_n = df.tail(n + 1)
+    df_tail_n = df.tail(n_coefs + 1)
     coef_list = _iterative_ols(df_tail_n, ['index'], [column])
     coef_list = np.squeeze(np.concatenate(coef_list))
-    if all(coef > 0 for coef in coef_list):
+    return _is_uptrend(coef_list, degrees_param)
+
+
+def _is_uptrend(coef_list, degrees_param):
+    mean_coefs = np.mean(coef_list)
+    deg = (np.arctan(mean_coefs) * 180) / np.pi
+    if all(coef > 0 for coef in coef_list) and deg >= degrees_param:
         return 1
     return 0
 

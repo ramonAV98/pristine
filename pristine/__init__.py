@@ -1,0 +1,6 @@
+"""
+Pristine daily trading library for Python
+=========================================
+pristine is a Python library integrating ...
+It aims to provide ...
+"""

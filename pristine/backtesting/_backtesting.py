@@ -1,6 +1,6 @@
 import pandas as pd
-from sources.load_data import load_data
-from scanner import Scanner
+from pristine.sources import _datasource
+from pristine.scanner import Scanner
 
 class Backtesting:
     def __init__(self, symbols, end_date, n_days, symbol_col='Symbol',
@@ -12,7 +12,7 @@ class Backtesting:
         self.date_col = date_col
         self.date_range = self._def_date_range()
         self.start_date = self.date_range.min()
-        self.df_source = load_data(self.symbols, end_date, self.start_date)
+        self.df_source = _datasource(self.symbols, end_date, self.start_date)
 
     def run(self):
         df_scan = self._scan_multiple_dates()
@@ -34,7 +34,6 @@ class Backtesting:
     def _loc_sym(self, sym):
         mask = (self.df_source[self.symbol_col] == sym)
         return self.df_source[mask]
-
 
     def _scan_multiple_dates(self):
         dfs = []

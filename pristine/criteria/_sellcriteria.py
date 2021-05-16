@@ -1,4 +1,4 @@
-from criteria._criteria import Criteria
+from pristine.criteria._criteria import Criteria
 
 
 class SellCriteria(Criteria):
