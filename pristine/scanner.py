@@ -1,6 +1,6 @@
 from .criteria import (FtyMaUptrend, TnyMaUptrend, ContRedCandles,
                        ContDescHigh, ColaDePiso, ProVolume, NarrowBody,
-                       PristineZone, SectorTrend)
+                       PristineZone)
 import pandas as pd
 
 BUY_CRITERIA = [
@@ -37,13 +37,9 @@ class Scanner:
     ----------
     df_source. pd.DataFrame
         Dataframe containing data for all the symbols that want to be scanned.
-        Needed columns: [date_col, symbol_col, 'adj_close', 'close', 'high',
-                        'low', 'open', 'volume']
-        The primary key for this dataframe should be the composition of
-        'Date' and 'Symbol'. That is, each row is uniquely identified by
-        its Date and Symbol.
-        Defaults columns for date_col and symbol_col are 'Date' and 'Symbol',
-        respectively.
+        The primary key for this dataframe should be the composition
+        (date, symbol). That is, each row is uniquely identified by its
+        timestamp and symbol.
 
     date. str or timestamp. Default None
         Scanning date.  If None, the scanning date corresponds to the maximum
@@ -54,6 +50,12 @@ class Scanner:
 
     symbol_col. str. Default 'symbol'
         Column containing the tickers
+
+    Raises
+    ------
+    AssertionError if any of the following (financial) columns is not present:
+    [date_col, symbol_col, 'adj_close', 'close', 'high', 'low', 'open',
+    'volume'].
     """
 
     def __init__(self, df_source, date_col='date', symbol_col='symbol',
@@ -66,8 +68,6 @@ class Scanner:
         self._validate_df_source()
         self.symbols = self.df_source[symbol_col].unique().tolist()
         self.date = self.df_source[date_col].max()
-        self.sector_trend = SectorTrend(df_source, n_coefs,
-                                        degrees_param).scan()
         self._kwargs_params = dict(
             n_coefs=n_coefs,
             cola_param=cola_param,
@@ -105,18 +105,13 @@ class Scanner:
         n_coefs = self._kwargs_params['n_coefs']
         if len(df_sym) < n_coefs + 40:
             return None
-        sector = self._get_sym_sector(df_sym)
         buy_scan = self._scan_criteria(df_sym, BUY_CRITERIA)
         common_scan = self._scan_criteria(df_sym, COMMON_CRITERIA)
         buy_scan = {**buy_scan,
                     **common_scan,
-                    'sector_trend': self.sector_trend[sector],
                     'symbol': sym,
                     'date': self.date}
         return buy_scan
-
-    def _get_sym_sector(self, df_sym):
-        return df_sym.sector.unique().item()
 
     def _loc_sym(self, sym):
         """
@@ -132,6 +127,6 @@ class Scanner:
         """
         scan_results = {}
         for cls in criteria:
-            name = cls.__name__
+            name = cls.__name__.lower()
             scan_results[name] = cls(df, **self._kwargs_params).scan()
         return scan_results

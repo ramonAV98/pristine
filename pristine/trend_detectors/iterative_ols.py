@@ -27,7 +27,6 @@ def detect_uptrend(df, column, n_coefs=20, degrees_param=45):
     n: int.
         Number of coefficients to compute
     """
-    print(degrees_param)
     df.reset_index(inplace=True)  # Index column is available from now on
     df_tail_n = df.tail(n_coefs + 1)
     coef_list = _iterative_ols(df_tail_n, ['index'], [column])

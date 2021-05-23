@@ -30,7 +30,6 @@ class Datasource:
             raise ValueError(f"Source '{self.source}' not available")
 
         self._validate_financial_cols(df_source)
-        df_source = self._merge_sector(df_source)
         return df_source
 
     def _validate_financial_cols(self, df):
