@@ -13,10 +13,9 @@ class FtyMaUptrend(Criteria):
         Dataframe for a single symbol
     """
 
-    def __init__(self, df, n_coefs, degrees_param, **kwargs):
+    def __init__(self, df, n_coefs, **kwargs):
         super().__init__(df)
         self.n_coefs = n_coefs
-        self.degrees_param = degrees_param
 
     def scan(self):
         return self._fty_ma_uptrend()
@@ -24,19 +23,19 @@ class FtyMaUptrend(Criteria):
     def _fty_ma_uptrend(self):
         ma = 40  # 40 because 40ma
         min_dates = ma + self.n_coefs
-        assert len(self.df) >= min_dates, ('Symbol df has less than '
-                                           f'{min_dates} dates')
+        assert len(self.df) >= min_dates, (f'The given n_coefs requires at '
+                                           f'least {min_dates} for the 40ma. '
+                                           f'Instead got {len(self.df)}')
         df_40ma = Criteria.compute_ma(self.df, ma=ma)
-        uptrend = detect_uptrend(df_40ma, '40ma', self.n_coefs,
-                                 self.degrees_param)
-        return uptrend
+        uptrend, deg = detect_uptrend(df_40ma, '40ma', self.n_coefs,
+                                      return_deg=True)
+        return uptrend, deg
 
 
 class TnyMaUptrend(Criteria):
-    def __init__(self, df, n_coefs, degrees_param, **kwargs):
+    def __init__(self, df, n_coefs, **kwargs):
         super().__init__(df)
         self.n_coefs = n_coefs
-        self.degrees_param = degrees_param
 
     def scan(self):
         return self._twenty_ma_uptrend()
@@ -44,12 +43,13 @@ class TnyMaUptrend(Criteria):
     def _twenty_ma_uptrend(self):
         ma = 20  # 20 because 20ma
         min_dates = ma + self.n_coefs
-        assert len(self.df) >= min_dates, ('Symbol df has less than '
-                                           f'{min_dates} dates')
+        assert len(self.df) >= min_dates, (f'The given n_coefs requires at '
+                                           f'least {min_dates} for the 20ma. '
+                                           f'Instead got {len(self.df)}')
         df_20ma = Criteria.compute_ma(self.df, ma=ma)
-        uptrend = detect_uptrend(df_20ma, '20ma', self.n_coefs,
-                                 self.degrees_param)
-        return uptrend
+        uptrend, deg = detect_uptrend(df_20ma, '20ma', self.n_coefs,
+                                      return_deg=True)
+        return uptrend, deg
 
 
 class ContDescHigh(Criteria):
@@ -108,34 +108,3 @@ class ColaDePiso(Criteria):
         if (close - low) > self.cola_param * self.avg_cola:
             return 1
         return 0
-
-
-class SectorTrend(Criteria):
-    def __init__(self, df, n_coefs, degrees_param, **kwargs):
-        super().__init__(df)
-        self._sectors = df.sector.unique().tolist()
-        self.n_coefs = n_coefs
-        self.degrees_param = degrees_param
-
-    def scan(self):
-        return self._sector_trend()
-
-    def _wm_fn(self):
-        return lambda x: np.average(x, weights=self.df.loc[x.index, 'volume'])
-
-    def _sector_trend(self):
-        wm_fn = self._wm_fn()
-        groupby_cols = ['sector', 'date']
-        agg = {'close': wm_fn}
-        df_agg = self.df.groupby(groupby_cols).agg(agg)
-        df_agg.reset_index(inplace=True)
-        uptrend_by_sector = {}
-        for sect in self._sectors:
-            mask = df_agg.sector == sect
-            df_sect = df_agg.loc[mask].copy()
-            if len(df_sect) < self.n_coefs + 40:
-                continue
-            uptrend = FtyMaUptrend(df_sect, self.n_coefs,
-                                   self.degrees_param).scan()
-            uptrend_by_sector[sect] = uptrend
-        return uptrend_by_sector

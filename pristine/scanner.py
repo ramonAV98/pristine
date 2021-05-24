@@ -59,8 +59,7 @@ class Scanner:
     """
 
     def __init__(self, df_source, date_col='date', symbol_col='symbol',
-                 n_coefs=20, cola_param=2, narrow_param=.5, vol_param=5,
-                 degrees_param=45):
+                 n_coefs=20, cola_param=2, narrow_param=.5, vol_param=5):
 
         self.df_source = df_source
         self.date_col = date_col
@@ -73,7 +72,6 @@ class Scanner:
             cola_param=cola_param,
             narrow_param=narrow_param,
             vol_param=vol_param,
-            degrees_param=degrees_param
         )
 
     def _validate_df_source(self):
@@ -128,5 +126,14 @@ class Scanner:
         scan_results = {}
         for cls in criteria:
             name = cls.__name__.lower()
-            scan_results[name] = cls(df, **self._kwargs_params).scan()
+            scan = cls(df, **self._kwargs_params).scan()
+            if isinstance(scan, tuple):
+                # The only criteria that returns tuples are the ma uptrends.
+                # The tuple is of the from (bool, deg) where bool indicates
+                # the presence of a uptrend according to the ols_criterion and
+                # deg is the slope degrees.
+                scan_results[name] = scan[0]
+                scan_results[name + '_deg'] = round(scan[1], 3)
+            else:
+                scan_results[name] = scan
         return scan_results
